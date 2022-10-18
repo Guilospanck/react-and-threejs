@@ -22,6 +22,7 @@ export const useHomeViewModel = (): UseHomeViewModelReturnType => {
   const canvasHeightRef = useRef<number>()
   const FLOOR_HEIGHT: number = 4 // defines the height of each floor of our "building"
   const GRID_LENGTH: number = 20
+  const objectsRef = useRef<THREE.Mesh<THREE.BufferGeometry, THREE.Material>[]>([])
 
   useEffect(() => {
     buildSceneAndNecessaryFeatures()
@@ -71,6 +72,10 @@ export const useHomeViewModel = (): UseHomeViewModelReturnType => {
   /** Mouse Move event */
   useEffect(() => {
     const callback = (e: MouseEvent) => {
+      /** Reset used variables */
+      intersectsRef.current = []
+      highlightMeshRef.current.material.color.setHex(0xFFFFFF)
+
       /** From https://threejs.org/docs/#api/en/core/Raycaster */
       mousePositionRef.current.x = (e.clientX / canvasWidthRef.current) * 2 - 1
       mousePositionRef.current.y = -(e.clientY / canvasHeightRef.current) * 2 + 1
@@ -105,6 +110,8 @@ export const useHomeViewModel = (): UseHomeViewModelReturnType => {
 
       if (meshIntersects.length === 0) { return }
 
+      intersectsRef.current = meshIntersects
+
       // Adds 0.5 because it will render the center of the square object (1x1), so we must offset by 0.5
       // to render it properly inside the grid
       const highlightPos = new THREE.Vector3().copy(meshIntersects[0].point).floor().addScalar(0.5)
@@ -115,6 +122,44 @@ export const useHomeViewModel = (): UseHomeViewModelReturnType => {
     window.addEventListener('mousemove', (e) => callback(e))
 
     return () => window.removeEventListener('mousemove', callback)
+  }, [])
+
+  /** Mouse Down event */
+  useEffect(() => {
+    const sphereMesh = new THREE.Mesh(
+      new THREE.SphereGeometry(0.4, 4, 2),
+      new THREE.MeshBasicMaterial({
+        wireframe: true,
+        color: 0xFFEA00
+      })
+    )
+
+    const callback = () => {
+      /** If not inside the grid, return */
+      if (intersectsRef.current.length === 0) { return }
+
+      /** If an object already exists, return */
+      const objectExist = objectsRef.current.find(obj =>
+        obj.position.x === highlightMeshRef.current.position.x &&
+        obj.position.z === highlightMeshRef.current.position.z)
+      if (objectExist) { return }
+
+      /** Clones object and add it to the scene */
+      const sphereClone = sphereMesh.clone()
+      sphereClone.position.copy(highlightMeshRef.current.position)
+      sphereClone.position.y = sphereClone.position.y + 0.4
+      sceneRef.current.add(sphereClone)
+
+      /** Change the color of the highlighted mesh */
+      highlightMeshRef.current.material.color.setHex(0x00FFFF)
+
+      /** Updated the objects array */
+      objectsRef.current.push(sphereClone)
+    }
+
+    window.addEventListener('mousedown', callback)
+
+    return () => window.removeEventListener('mousedown', callback)
   }, [])
 
   const buildSceneAndNecessaryFeatures = () => {
