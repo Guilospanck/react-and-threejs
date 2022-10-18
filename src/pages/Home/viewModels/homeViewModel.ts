@@ -24,34 +24,7 @@ export const useHomeViewModel = (): UseHomeViewModelReturnType => {
   const GRID_LENGTH: number = 20
 
   useEffect(() => {
-    /** Get canvas object */
-    const canvas = document.getElementById('webgl')
-    canvasWidthRef.current = canvas.clientWidth
-    canvasHeightRef.current = canvas.clientHeight
-
-    /** Create and set the size of a WebGL renderer */
-    rendererRef.current = new THREE.WebGLRenderer({ canvas })
-    rendererRef.current.setSize(canvasWidthRef.current, canvasHeightRef.current)
-
-    /** Create the scene object */
-    sceneRef.current = new THREE.Scene()
-
-    /** Create a perspective camera with the aspect ratio of the Canvas */
-    const aspectRatio = canvasWidthRef.current / canvasHeightRef.current
-    cameraRef.current = new THREE.PerspectiveCamera(
-      45,
-      aspectRatio,
-      0.1,
-      1000
-    )
-
-    /** Orbit allows us to rotate and translate our view */
-    const orbit = new OrbitControls(cameraRef.current, rendererRef.current.domElement)
-
-    /** Defines initial camera position */
-    cameraRef.current.position.set(20, 20, 20)
-
-    orbit.update()
+    buildSceneAndNecessaryFeatures()
 
     /** Creates plane meshes */
     const planeMesh = meshBuilder({})
@@ -79,6 +52,7 @@ export const useHomeViewModel = (): UseHomeViewModelReturnType => {
     highlightMeshRef.current.rotateX(-Math.PI / 2)
     highlightMeshRef.current.position.set(0.5, 0, 0.5)
 
+    /** Adds highlighted mesh to our scene */
     sceneRef.current.add(highlightMeshRef.current)
 
     /** Axes coordinates
@@ -94,6 +68,7 @@ export const useHomeViewModel = (): UseHomeViewModelReturnType => {
     rendererRef.current.setAnimationLoop(animate)
   }, [])
 
+  /** Mouse Move event */
   useEffect(() => {
     const callback = (e: MouseEvent) => {
       /** From https://threejs.org/docs/#api/en/core/Raycaster */
@@ -108,7 +83,9 @@ export const useHomeViewModel = (): UseHomeViewModelReturnType => {
         return
       }
 
-      /** Get interceptions with Mesh objects */
+      /** Get interceptions with Mesh objects and sort it so the highest plane
+       *  will have priority than a lowest one.
+       */
       let meshIntersects: THREE.Intersection<THREE.Object3D<THREE.Event>>[] = []
       for (let i = 0; i < intersectsRef.current.length; i++) {
         const object = intersectsRef.current[i].object
@@ -139,6 +116,37 @@ export const useHomeViewModel = (): UseHomeViewModelReturnType => {
 
     return () => window.removeEventListener('mousemove', callback)
   }, [])
+
+  const buildSceneAndNecessaryFeatures = () => {
+    /** Get canvas object */
+    const canvas = document.getElementById('webgl')
+    canvasWidthRef.current = canvas.clientWidth
+    canvasHeightRef.current = canvas.clientHeight
+
+    /** Create and set the size of a WebGL renderer */
+    rendererRef.current = new THREE.WebGLRenderer({ canvas })
+    rendererRef.current.setSize(canvasWidthRef.current, canvasHeightRef.current)
+
+    /** Create the scene object */
+    sceneRef.current = new THREE.Scene()
+
+    /** Create a perspective camera with the aspect ratio of the Canvas */
+    const aspectRatio = canvasWidthRef.current / canvasHeightRef.current
+    cameraRef.current = new THREE.PerspectiveCamera(
+      45,
+      aspectRatio,
+      0.1,
+      1000
+    )
+
+    /** Orbit allows us to rotate and translate our view */
+    const orbit = new OrbitControls(cameraRef.current, rendererRef.current.domElement)
+
+    /** Defines initial camera position */
+    cameraRef.current.position.set(20, 20, 20)
+
+    orbit.update()
+  }
 
   const gridBuilder = ({ width = GRID_LENGTH, height = GRID_LENGTH }: GridProps): THREE.GridHelper => {
     return new THREE.GridHelper(width, height)
