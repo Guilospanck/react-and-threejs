@@ -23,6 +23,7 @@ export const useHomeViewModel = (): UseHomeViewModelReturnType => {
   const FLOOR_HEIGHT: number = 4 // defines the height of each floor of our "building"
   const GRID_LENGTH: number = 20
   const objectsRef = useRef<THREE.Mesh<THREE.BufferGeometry, THREE.Material>[]>([])
+  const arrowRef = useRef<THREE.ArrowHelper>()
 
   useEffect(() => {
     buildSceneAndNecessaryFeatures()
@@ -88,29 +89,28 @@ export const useHomeViewModel = (): UseHomeViewModelReturnType => {
         return
       }
 
-      /** Get interceptions with Mesh objects and sort it so the highest plane
-       *  will have priority than a lowest one.
-       */
+      /** Get interceptions with Mesh objects */
       let meshIntersects: THREE.Intersection<THREE.Object3D<THREE.Event>>[] = []
       for (let i = 0; i < intersectsRef.current.length; i++) {
         const object = intersectsRef.current[i].object
-        if (object.type !== 'Mesh') { continue }
-
+        if (object.type !== 'Mesh' || object.parent.type !== 'Scene' || !('geometry' in object)) { continue }
         const intersect = intersectsRef.current[i]
         meshIntersects.push(intersect)
-        meshIntersects = meshIntersects.sort((a, b) => {
-          const aPositionZ = a.object.position.z
-          const bPositionZ = b.object.position.z
-
-          if (aPositionZ > bPositionZ) { return 1 }
-          if (aPositionZ < bPositionZ) { return -1 }
-          return 0
-        })
       }
 
-      if (meshIntersects.length === 0) { return }
+      /** Sort it so the highest plane will have priority over a lowest one */
+      meshIntersects = meshIntersects.sort((a, b) => {
+        const aPositionZ = a.object.position.z
+        const bPositionZ = b.object.position.z
+
+        if (aPositionZ > bPositionZ) { return -1 }
+        if (aPositionZ < bPositionZ) { return 1 }
+        return 0
+      })
 
       intersectsRef.current = meshIntersects
+
+      if (meshIntersects.length === 0) { return }
 
       // Adds 0.5 because it will render the center of the square object (1x1), so we must offset by 0.5
       // to render it properly inside the grid
@@ -144,7 +144,7 @@ export const useHomeViewModel = (): UseHomeViewModelReturnType => {
         obj.position.z === highlightMeshRef.current.position.z)
       if (objectExist) { return }
 
-      /** Clones object and add it to the scene */
+      /** Clones object and adds it to the scene */
       const sphereClone = sphereMesh.clone()
       sphereClone.position.copy(highlightMeshRef.current.position)
       sphereClone.position.y = sphereClone.position.y + 0.4
@@ -152,6 +152,13 @@ export const useHomeViewModel = (): UseHomeViewModelReturnType => {
 
       /** Change the color of the highlighted mesh */
       highlightMeshRef.current.material.color.setHex(0x00FFFF)
+
+      /** Add raycaster helper */
+      if (arrowRef.current) {
+        sceneRef.current.remove(arrowRef.current)
+      }
+      arrowRef.current = new THREE.ArrowHelper(raycasterRef.current.ray.direction, raycasterRef.current.ray.origin, 200, 0xFFA500)
+      sceneRef.current.add(arrowRef.current)
 
       /** Updated the objects array */
       objectsRef.current.push(sphereClone)
