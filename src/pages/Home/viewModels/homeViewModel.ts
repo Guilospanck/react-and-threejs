@@ -93,7 +93,8 @@ export const useHomeViewModel = (): UseHomeViewModelReturnType => {
       let meshIntersects: THREE.Intersection<THREE.Object3D<THREE.Event>>[] = []
       for (let i = 0; i < intersectsRef.current.length; i++) {
         const object = intersectsRef.current[i].object
-        if (object.type !== 'Mesh' || object.parent.type !== 'Scene' || !('geometry' in object)) { continue }
+        // eslint-disable-next-line dot-notation
+        if (object.parent.type !== 'Scene' || object.type !== 'Mesh' || !('geometry' in object) || object['geometry'].type !== 'PlaneGeometry') { continue }
         const intersect = intersectsRef.current[i]
         meshIntersects.push(intersect)
       }
@@ -116,6 +117,7 @@ export const useHomeViewModel = (): UseHomeViewModelReturnType => {
       // to render it properly inside the grid
       const highlightPos = new THREE.Vector3().copy(meshIntersects[0].point).floor().addScalar(0.5)
       const currentPosition = [highlightPos.x, meshIntersects[0].object.position.y, highlightPos.z]
+
       highlightMeshRef.current.position.set(currentPosition[0], currentPosition[1], currentPosition[2])
     }
 
