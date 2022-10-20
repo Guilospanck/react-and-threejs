@@ -21,7 +21,7 @@ export const useHomeViewModel = (): UseHomeViewModelReturnType => {
   const canvasWidthRef = useRef<number>()
   const canvasHeightRef = useRef<number>()
   const FLOOR_HEIGHT: number = 4 // defines the height of each floor of our "building"
-  const GRID_LENGTH: number = 20
+  const GRID_LENGTH: number = 25
   const objectsRef = useRef<THREE.Mesh<THREE.BufferGeometry, THREE.Material>[]>([])
   const arrowRef = useRef<THREE.ArrowHelper>()
 
@@ -31,10 +31,12 @@ export const useHomeViewModel = (): UseHomeViewModelReturnType => {
     /** Creates plane meshes */
     const planeMesh = meshBuilder({})
     planeMesh.rotateX(-Math.PI / 2)
+    currentMap(GRID_LENGTH, 0)
 
     const anotherPlaneMesh = meshBuilder({})
     anotherPlaneMesh.rotateX(-Math.PI / 2) // when rotating an object, you are also rotating its coordinate axes
     anotherPlaneMesh.translateZ(FLOOR_HEIGHT) // this is why here we're using translateZ
+    currentMap(GRID_LENGTH, FLOOR_HEIGHT)
 
     /** Adds our plane meshes to our scene */
     sceneRef.current.add(planeMesh)
@@ -140,6 +142,8 @@ export const useHomeViewModel = (): UseHomeViewModelReturnType => {
       /** If not inside the grid, return */
       if (intersectsRef.current.length === 0) { return }
 
+      console.log(highlightMeshRef.current.position)
+
       /** If an object already exists, return */
       const objectExist = objectsRef.current.find(obj =>
         obj.position.x === highlightMeshRef.current.position.x &&
@@ -197,7 +201,7 @@ export const useHomeViewModel = (): UseHomeViewModelReturnType => {
     const orbit = new OrbitControls(cameraRef.current, rendererRef.current.domElement)
 
     /** Defines initial camera position */
-    cameraRef.current.position.set(20, 20, 20)
+    cameraRef.current.position.set(0, 40, 0)
 
     orbit.update()
   }
@@ -219,6 +223,52 @@ export const useHomeViewModel = (): UseHomeViewModelReturnType => {
 
   const animate = () => {
     rendererRef.current.render(sceneRef.current, cameraRef.current)
+  }
+
+  /**
+ *    0 - - - - x
+ *    |
+ *    |
+ *    |
+ *    z
+ */
+  const currentMap = (gridNum: number, y: number): Number[][] => {
+    const matrix = []
+
+    for (let i = -gridNum / 2; i < gridNum / 2; i++) {
+      const x = i + 0.5
+      for (let j = -gridNum / 2; j < gridNum / 2; j++) {
+        const z = j + 0.5
+        matrix.push([x, y, z])
+      }
+    }
+
+    printMatrix(matrix, gridNum)
+    return matrix
+  }
+
+  const printMatrix = (matrix: Number[][], gridNum: number) => {
+    const longestStringLength = 16
+    let print = ''
+
+    for (let i = 0; i < matrix.length; i++) {
+      if ((i + 1) % gridNum === 1) {
+        print = print + '|'
+      }
+
+      const coordinates = matrix[i]
+      const coordinatesStr = ` (${coordinates[0]}, ${coordinates[1]}, ${coordinates[2]})`
+      const currentLength = coordinatesStr.length
+      const lengthToAdd = longestStringLength - currentLength
+
+      print = print + coordinatesStr + ' '.repeat(lengthToAdd)
+
+      if ((i + 1) % gridNum === 0 && i !== 0) {
+        print = print + ' |\n'
+      }
+    }
+
+    console.log(print)
   }
 
   return {
