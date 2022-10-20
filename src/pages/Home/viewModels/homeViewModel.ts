@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { UseHomeViewModelReturnType } from '../types'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import { BASE64_TEXTURES } from '../textures/index'
 
 type GridProps = {
   width?: number, height?: number
@@ -21,7 +22,7 @@ export const useHomeViewModel = (): UseHomeViewModelReturnType => {
   const canvasWidthRef = useRef<number>()
   const canvasHeightRef = useRef<number>()
   const FLOOR_HEIGHT: number = 4 // defines the height of each floor of our "building"
-  const GRID_LENGTH: number = 25
+  const GRID_LENGTH: number = 20
   const objectsRef = useRef<THREE.Mesh<THREE.BufferGeometry, THREE.Material>[]>([])
   const arrowRef = useRef<THREE.ArrowHelper>()
 
@@ -31,12 +32,12 @@ export const useHomeViewModel = (): UseHomeViewModelReturnType => {
     /** Creates plane meshes */
     const planeMesh = meshBuilder({})
     planeMesh.rotateX(-Math.PI / 2)
-    currentMap(GRID_LENGTH, 0)
+    // currentMap(GRID_LENGTH, 0)
 
     const anotherPlaneMesh = meshBuilder({})
     anotherPlaneMesh.rotateX(-Math.PI / 2) // when rotating an object, you are also rotating its coordinate axes
     anotherPlaneMesh.translateZ(FLOOR_HEIGHT) // this is why here we're using translateZ
-    currentMap(GRID_LENGTH, FLOOR_HEIGHT)
+    // currentMap(GRID_LENGTH, FLOOR_HEIGHT)
 
     /** Adds our plane meshes to our scene */
     sceneRef.current.add(planeMesh)
@@ -55,6 +56,9 @@ export const useHomeViewModel = (): UseHomeViewModelReturnType => {
     highlightMeshRef.current = meshBuilder({ width: 1, height: 1, transparent: true, visible: true })
     highlightMeshRef.current.rotateX(-Math.PI / 2)
     highlightMeshRef.current.position.set(0.5, 0, 0.5)
+
+    /** Texture Ref */
+    textureLoader(BASE64_TEXTURES.reaktorLogo)
 
     /** Adds highlighted mesh to our scene */
     sceneRef.current.add(highlightMeshRef.current)
@@ -225,6 +229,22 @@ export const useHomeViewModel = (): UseHomeViewModelReturnType => {
     rendererRef.current.render(sceneRef.current, cameraRef.current)
   }
 
+  const textureLoader = async (imageBase64: string) => {
+    const textureLoader = new THREE.TextureLoader()
+    const texture = await textureLoader.loadAsync(imageBase64)
+
+    const texturedMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(4, 4),
+      new THREE.MeshBasicMaterial({
+        map: texture
+      })
+    )
+
+    texturedMesh.rotateX(-Math.PI / 2)
+    texturedMesh.position.set(6, 0, 6)
+    sceneRef.current.add(texturedMesh)
+  }
+
   /**
  *    0 - - - - x
  *    |
@@ -232,6 +252,7 @@ export const useHomeViewModel = (): UseHomeViewModelReturnType => {
  *    |
  *    z
  */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const currentMap = (gridNum: number, y: number): Number[][] => {
     const matrix = []
 
