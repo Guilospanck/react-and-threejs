@@ -2,3 +2,4 @@ coverage
 *.json
 *.css
 src/assets
+*.md

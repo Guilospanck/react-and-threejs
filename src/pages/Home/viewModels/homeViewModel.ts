@@ -8,7 +8,7 @@ type GridProps = {
   width?: number, height?: number
 }
 type MeshProps = {
-  width?: number, height?: number, visible?: boolean, transparent?: boolean
+  width?: number, height?: number, visible?: boolean, transparent?: boolean, color?: THREE.Color,
 }
 
 export const useHomeViewModel = (): UseHomeViewModelReturnType => {
@@ -58,7 +58,8 @@ export const useHomeViewModel = (): UseHomeViewModelReturnType => {
     highlightMeshRef.current.position.set(0.5, 0, 0.5)
 
     /** Texture Ref */
-    textureLoader(BASE64_TEXTURES.reaktorLogo)
+    const mesh = meshBuilder({ width: 4, height: 4, visible: true })
+    addTextureToMeshAndCorrectItsPositionAndRotation({ mesh, xCoord: 6, zCoord: 6, imageBase64: BASE64_TEXTURES.reaktorLogo })
 
     /** Adds highlighted mesh to our scene */
     sceneRef.current.add(highlightMeshRef.current)
@@ -214,43 +215,53 @@ export const useHomeViewModel = (): UseHomeViewModelReturnType => {
     return new THREE.GridHelper(width, height)
   }
 
-  const meshBuilder = ({ width = GRID_LENGTH, height = GRID_LENGTH, visible = false, transparent = false }: MeshProps): THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial> => {
+  const meshBuilder = ({ width = GRID_LENGTH, height = GRID_LENGTH, visible = false, transparent = false, color = new THREE.Color(0xffffff) }: MeshProps): THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial> => {
     return new THREE.Mesh(
       new THREE.PlaneGeometry(width, height),
       new THREE.MeshBasicMaterial({
         side: THREE.DoubleSide,
         visible,
-        transparent
+        transparent,
+        color
       })
     )
+  }
+
+  const addTextureToMeshAndCorrectItsPositionAndRotation = async ({ mesh, xCoord, zCoord, imageBase64 }: { mesh: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>, xCoord: number, zCoord: number, imageBase64: string }) => {
+    const texture = await loadTextureAsync(imageBase64)
+    mesh.material.map = texture
+
+    putMeshIntoTheRightPlaneAndCoordinates(mesh, xCoord, zCoord)
+  }
+
+  /**
+   * Loads some texture image asynchronously.
+   *
+   * @param imageBase64 A base64 image to be displayed in BASE64 format.
+   */
+  const loadTextureAsync = async (imageBase64: string = BASE64_TEXTURES.reaktorLogo): Promise<THREE.Texture> => {
+    const textureLoader = new THREE.TextureLoader()
+    const texture = await textureLoader.loadAsync(imageBase64)
+
+    return texture
+  }
+
+  const putMeshIntoTheRightPlaneAndCoordinates = (mesh: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>, xCoord: number, zCoord: number) => {
+    mesh.rotateX(-Math.PI / 2)
+    mesh.position.set(xCoord, 0, zCoord)
+    sceneRef.current.add(mesh)
   }
 
   const animate = () => {
     rendererRef.current.render(sceneRef.current, cameraRef.current)
   }
 
-  const textureLoader = async (imageBase64: string) => {
-    const textureLoader = new THREE.TextureLoader()
-    const texture = await textureLoader.loadAsync(imageBase64)
-
-    const texturedMesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(4, 4),
-      new THREE.MeshBasicMaterial({
-        map: texture
-      })
-    )
-
-    texturedMesh.rotateX(-Math.PI / 2)
-    texturedMesh.position.set(6, 0, 6)
-    sceneRef.current.add(texturedMesh)
-  }
-
   /**
- *    0 - - - - x
- *    |
- *    |
- *    |
- *    z
+   *    0 - - - - x
+   *    |
+   *    |
+   *    |
+   *    z
  */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const currentMap = (gridNum: number, y: number): Number[][] => {
