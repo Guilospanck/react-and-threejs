@@ -111,6 +111,10 @@ export const useHomeViewModel = (): UseHomeViewModelReturnType => {
       })
       currentMesh.rotateX(-Math.PI / 2)
       currentMesh.position.set(gameUnits.xGameUnits, 0, gameUnits.zGameUnits)
+      // Add info to current obj (mesh)
+      currentMesh.userData = {
+        user: 'User_1'
+      }
       sceneRef.current.add(currentMesh)
     })
 
@@ -204,7 +208,11 @@ export const useHomeViewModel = (): UseHomeViewModelReturnType => {
       /** If not inside the grid, return */
       if (intersectsRef.current.length === 0) { return }
 
-      console.log(highlightMeshRef.current.position)
+      /** Get objects that have some user data in them */
+      const objectWithUserData = intersectsRef.current.find(obj =>
+        obj.object.userData && obj.object.userData.user)
+
+      if (objectWithUserData) { alert(objectWithUserData.object.userData.user) }
 
       /** If an object already exists, return */
       const objectExist = objectsRef.current.find(obj =>
