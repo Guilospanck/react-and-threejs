@@ -18,7 +18,7 @@ Our current grid is divided into `${GRID_LENGTH}` equal pieces, therefore each g
    ... +17
 ```
 
-Using this information, we could have the following object containing data about which are of the real map belongs to which owner (and
+Using this information, we could have the following object containing data about which area of the real map belongs to which owner (and
 also considering that all areas are square, meaning that no one owns a different piece of land other than one made solely of squared lands
 and the minimum land to be bought is defined by the area of `${REAL_X_MAP_UNITS}/${GRID_LENGTH} x ${REAL_Z_MAP_UNITS}/${GRID_LENGTH}`, in real map units):
 
@@ -32,8 +32,8 @@ and the minimum land to be bought is defined by the area of `${REAL_X_MAP_UNITS}
   */
 
 type Land = {  
-  xCoord: number, // x coordinate of the center of the square (in real map units)
-  zCoord: number, // z coordinate of the center of the square (in real map units)
+  x: number, // x coordinate of the center of the square (in real map units)
+  z: number, // z coordinate of the center of the square (in real map units)
 }
 
 type Property = {
@@ -41,32 +41,32 @@ type Property = {
   lands: Land[]
 }
 
-const map: Property[] = [
+const mapInfo: Property[] = [
   {
     owner: "User_1",
     lands: [
-      { x: 50, y: 50 },
-      { x: 60, y: 60 },
-      { x: 70, y: 70 },
-      { x: 80, y: 80 },
-    ]
+      { x: 50, z: 50 },
+      { x: 150, z: 150 },
+      { x: 250, z: 250 },
+      { x: 350, z: 350 },
+    ],
   },
   {
     owner: "User_2",
     lands: [
-      { x: 150, y: 150 },
-      { x: 160, y: 160 },
-      { x: 170, y: 170 },
-      { x: 180, y: 180 },
+      { x: 450, z: 450 },
+      { x: 550, z: 550 },
+      { x: 650, z: 650 },
+      { x: 750, z: 750 },
     ]
   },
   {
     owner: "User_3",
     lands: [
-      { x: 250, y: 250 },
-      { x: 260, y: 260 },
-      { x: 270, y: 270 },
-      { x: 280, y: 280 },
+      { x: 850, z: 850 },
+      { x: 950, z: 950 },
+      { x: 1050, z: 1050 },
+      { x: 1150, z: 1150 },
     ]
   },
 ]
@@ -98,13 +98,14 @@ const FIRST_Z_HALF = REAL_Z_MAP_UNITS / 2
               |
              (z)
 */
-const mapRealUnitsToGameUnits = (land: Land): (x: number, y: number) => {
-  let xGameUnits, zGameUnits = land.x - FIRST_X_HALF, land.z - FIRST_Z_HALF 
+const mapRealUnitsToGameUnits = (land: Land): { xGameUnits: number, zGameUnits: number } => {
+  let xGameUnits = land.x - FIRST_X_HALF
+  let zGameUnits = land.z - FIRST_Z_HALF
 
   xGameUnits /= MULTIPLYING_FACTOR_X
   zGameUnits /= MULTIPLYING_FACTOR_Z
 
-  return (xGameUnits, zGameUnits)  
+  return { xGameUnits, zGameUnits }
 }
 
 ```

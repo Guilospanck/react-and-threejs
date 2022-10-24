@@ -7,9 +7,50 @@ import { BASE64_TEXTURES } from '../textures/index'
 type GridProps = {
   width?: number, height?: number
 }
+
 type MeshProps = {
   width?: number, height?: number, visible?: boolean, transparent?: boolean, color?: THREE.Color,
 }
+
+type Land = {
+  x: number, // x coordinate of the center of the square (in real map units)
+  z: number, // z coordinate of the center of the square (in real map units)
+}
+
+type Property = {
+  owner: String,
+  lands: Land[]
+}
+
+const mapInfo: Property[] = [
+  {
+    owner: 'User_1',
+    lands: [
+      { x: 50, z: 50 },
+      { x: 150, z: 150 },
+      { x: 250, z: 250 },
+      { x: 350, z: 350 }
+    ]
+  },
+  {
+    owner: 'User_2',
+    lands: [
+      { x: 450, z: 450 },
+      { x: 550, z: 550 },
+      { x: 650, z: 650 },
+      { x: 750, z: 750 }
+    ]
+  },
+  {
+    owner: 'User_3',
+    lands: [
+      { x: 850, z: 850 },
+      { x: 950, z: 950 },
+      { x: 1050, z: 1050 },
+      { x: 1150, z: 1150 }
+    ]
+  }
+]
 
 export const useHomeViewModel = (): UseHomeViewModelReturnType => {
   const rendererRef = useRef<THREE.WebGLRenderer>()
@@ -23,6 +64,8 @@ export const useHomeViewModel = (): UseHomeViewModelReturnType => {
   const canvasHeightRef = useRef<number>()
   const FLOOR_HEIGHT: number = 4 // defines the height of each floor of our "building"
   const GRID_LENGTH: number = 20
+  const REAL_X_MAP_UNITS: number = 2000
+  const REAL_Z_MAP_UNITS: number = 2000
   const objectsRef = useRef<THREE.Mesh<THREE.BufferGeometry, THREE.Material>[]>([])
   const arrowRef = useRef<THREE.ArrowHelper>()
 
@@ -56,6 +99,20 @@ export const useHomeViewModel = (): UseHomeViewModelReturnType => {
     highlightMeshRef.current = meshBuilder({ width: 1, height: 1, transparent: true, visible: true })
     highlightMeshRef.current.rotateX(-Math.PI / 2)
     highlightMeshRef.current.position.set(0.5, 0, 0.5)
+
+    /** Testing map translation for first user */
+    mapInfo[0].lands.forEach((land) => {
+      const gameUnits = mapRealUnitsToGameUnits(land)
+      const currentMesh = meshBuilder({
+        width: 1,
+        height: 1,
+        transparent: true,
+        visible: true
+      })
+      currentMesh.rotateX(-Math.PI / 2)
+      currentMesh.position.set(gameUnits.xGameUnits, 0, gameUnits.zGameUnits)
+      sceneRef.current.add(currentMesh)
+    })
 
     /** Texture Ref */
     const mesh = meshBuilder({ width: 4, height: 4, visible: true })
@@ -254,6 +311,40 @@ export const useHomeViewModel = (): UseHomeViewModelReturnType => {
 
   const animate = () => {
     rendererRef.current.render(sceneRef.current, cameraRef.current)
+  }
+
+  /**
+    Converts from real map units to game units.
+    One thing to observe is that the origin of the coordinates axes
+    is at the center of the screen, therefore the units must also be translated.
+
+    ```
+                (-z)
+                  |
+                  |
+                  |
+     (-x) - - - - 0 - - - - (x)
+                  |
+                  |
+                  |
+                (z)
+    ```
+   * @param land Coordinates (X, Z) of the center of the square in Real Map units.
+   * @returns Coordinates (X, Z) in Game units.
+   */
+  const mapRealUnitsToGameUnits = (land: Land): { xGameUnits: number, zGameUnits: number } => {
+    const MULTIPLYING_FACTOR_X = REAL_X_MAP_UNITS / GRID_LENGTH
+    const MULTIPLYING_FACTOR_Z = REAL_Z_MAP_UNITS / GRID_LENGTH
+    const FIRST_X_HALF = REAL_X_MAP_UNITS / 2
+    const FIRST_Z_HALF = REAL_Z_MAP_UNITS / 2
+
+    let xGameUnits = land.x - FIRST_X_HALF
+    let zGameUnits = land.z - FIRST_Z_HALF
+
+    xGameUnits /= MULTIPLYING_FACTOR_X
+    zGameUnits /= MULTIPLYING_FACTOR_Z
+
+    return { xGameUnits, zGameUnits }
   }
 
   /**
