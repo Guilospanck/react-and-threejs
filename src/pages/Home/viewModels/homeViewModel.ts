@@ -53,6 +53,11 @@ const mapInfo: Property[] = [
 ]
 
 export const useHomeViewModel = (): UseHomeViewModelReturnType => {
+  const FLOOR_HEIGHT: number = 4 // defines the height of each floor of our "building"
+  const GRID_LENGTH: number = 20
+  const REAL_X_MAP_UNITS: number = 2000
+  const REAL_Z_MAP_UNITS: number = 2000
+
   const rendererRef = useRef<THREE.WebGLRenderer>()
   const sceneRef = useRef<THREE.Scene>()
   const cameraRef = useRef<THREE.PerspectiveCamera>()
@@ -62,10 +67,6 @@ export const useHomeViewModel = (): UseHomeViewModelReturnType => {
   const intersectsRef = useRef<THREE.Intersection<THREE.Object3D<THREE.Event>>[]>([])
   const canvasWidthRef = useRef<number>()
   const canvasHeightRef = useRef<number>()
-  const FLOOR_HEIGHT: number = 4 // defines the height of each floor of our "building"
-  const GRID_LENGTH: number = 20
-  const REAL_X_MAP_UNITS: number = 2000
-  const REAL_Z_MAP_UNITS: number = 2000
   const objectsRef = useRef<THREE.Mesh<THREE.BufferGeometry, THREE.Material>[]>([])
   const arrowRef = useRef<THREE.ArrowHelper>()
 
@@ -75,12 +76,10 @@ export const useHomeViewModel = (): UseHomeViewModelReturnType => {
     /** Creates plane meshes */
     const planeMesh = meshBuilder({})
     planeMesh.rotateX(-Math.PI / 2)
-    // currentMap(GRID_LENGTH, 0)
 
     const anotherPlaneMesh = meshBuilder({})
     anotherPlaneMesh.rotateX(-Math.PI / 2) // when rotating an object, you are also rotating its coordinate axes
     anotherPlaneMesh.translateZ(FLOOR_HEIGHT) // this is why here we're using translateZ
-    // currentMap(GRID_LENGTH, FLOOR_HEIGHT)
 
     /** Adds our plane meshes to our scene */
     sceneRef.current.add(planeMesh)
@@ -101,26 +100,31 @@ export const useHomeViewModel = (): UseHomeViewModelReturnType => {
     highlightMeshRef.current.position.set(0.5, 0, 0.5)
 
     /** Testing map translation for first user */
-    mapInfo[0].lands.forEach((land) => {
-      const gameUnits = mapRealUnitsToGameUnits(land)
-      const currentMesh = meshBuilder({
-        width: 1,
-        height: 1,
-        transparent: true,
-        visible: true
+    mapInfo.forEach(info => {
+      const user = info.owner
+      const lands = info.lands
+      lands.forEach(land => {
+        const gameUnits = mapRealUnitsToGameUnits(land)
+        const currentMesh = meshBuilder({
+          width: 1,
+          height: 1,
+          transparent: true,
+          visible: true
+        })
+        currentMesh.rotateX(-Math.PI / 2)
+        currentMesh.position.set(gameUnits.xGameUnits, 0, gameUnits.zGameUnits)
+        // Add info to current obj (mesh)
+        currentMesh.userData = {
+          user
+        }
+
+        sceneRef.current.add(currentMesh)
       })
-      currentMesh.rotateX(-Math.PI / 2)
-      currentMesh.position.set(gameUnits.xGameUnits, 0, gameUnits.zGameUnits)
-      // Add info to current obj (mesh)
-      currentMesh.userData = {
-        user: 'User_1'
-      }
-      sceneRef.current.add(currentMesh)
     })
 
     /** Texture Ref */
     const mesh = meshBuilder({ width: 4, height: 4, visible: true })
-    addTextureToMeshAndCorrectItsPositionAndRotation({ mesh, xCoord: 6, zCoord: 6, imageBase64: BASE64_TEXTURES.reaktorLogo })
+    addTextureToMeshAndCorrectItsPositionAndRotation({ mesh, xCoord: 8, zCoord: 8, imageBase64: BASE64_TEXTURES.card })
 
     /** Adds highlighted mesh to our scene */
     sceneRef.current.add(highlightMeshRef.current)
@@ -304,7 +308,7 @@ export const useHomeViewModel = (): UseHomeViewModelReturnType => {
    *
    * @param imageBase64 A base64 image to be displayed in BASE64 format.
    */
-  const loadTextureAsync = async (imageBase64: string = BASE64_TEXTURES.reaktorLogo): Promise<THREE.Texture> => {
+  const loadTextureAsync = async (imageBase64: string = BASE64_TEXTURES.card): Promise<THREE.Texture> => {
     const textureLoader = new THREE.TextureLoader()
     const texture = await textureLoader.loadAsync(imageBase64)
 
